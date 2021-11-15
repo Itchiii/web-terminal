@@ -1,0 +1,13 @@
+<link rel="stylesheet" href="./web-terminal/web-terminal.css" type="text/css">
+
+<div class="terminal">
+  <ul class="terminal-nav">
+    <li id="nav-help">Help</li>
+    <li id="nav-about">About</li>
+  </ul>
+  <div class="terminal-content" id="terminal-content">
+    <slot class="terminal-intro" name="terminal-intro"></slot>
+    <span class="terminal-user"></span>
+    <span tabindex="-1" class="command-field" contenteditable="true" spellcheck="false">&nbsp;</span>
+  </div>
+</div>

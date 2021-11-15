@@ -1,0 +1,7 @@
+vendor/*
+workspace.code-workspace
+TODO
+style.css
+main.js
+index.html
+.editorconfig

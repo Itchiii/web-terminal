@@ -1,0 +1,131 @@
+ul, pre {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+li {
+  list-style: none;
+}
+
+[contenteditable]:focus {
+  outline: 0px solid transparent;
+}
+
+.terminal {
+  background-color: #001a34;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.terminal-nav {
+  background-color: #000d27;
+  display: flex;
+}
+
+.terminal-nav > li {
+  padding: 1em;
+  cursor: default;
+  position: relative;
+  color: #bbb;
+}
+
+.terminal-nav > li:hover {
+  color: #fff;
+}
+
+.nav-commands:hover .nav-menu {
+  display: block;
+}
+
+.nav-menu {
+  display: none;
+  position: absolute;
+  background-color: #fff;
+  color: grey;
+  box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.8);
+  top: 3em;
+}
+
+.nav-menu li {
+  padding: 0.5em 1em;
+}
+
+.terminal-content {
+  align-content: flex-start;
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  font-size: 14px;
+  overflow-y: auto;
+}
+
+.terminal-content::-webkit-scrollbar-track {
+  border-radius: 5px;
+  background-color: rgba(0, 13, 39, 0.5);
+}
+
+.terminal-content::-webkit-scrollbar {
+  width: 6px;
+  background-color: rgba(0, 13, 39, 0);
+}
+
+.terminal-content::-webkit-scrollbar-thumb {
+  border-radius: 5px;
+  box-shadow: inset 0 0 2px 0 rgba(0, 0, 0, 0.5);
+  background-color: rgba(150, 150, 150, 1);
+}
+
+.terminal-intro::slotted(*) {
+  min-width: 100%;
+}
+
+.terminal-content *:not(span) {
+  min-width: 100%;
+}
+
+.terminal-content span:not(.command-cursor) {
+  margin-top: 6px;
+}
+
+.terminal-content pre, .terminal-content p {
+  margin: 2px 0;
+}
+
+.terminal-user {
+  font-weight: bold;
+  color: #41c29f;
+}
+
+.command-field {
+  caret-color: rgba(255, 255, 255, 0);
+  display: inline;
+  word-break: break-all;
+  text-transform: lowercase;
+  color: #fff;
+  margin-left: 1em;
+}
+
+.command-cursor {
+  height: 0.5rem;
+  width: 0.5em;
+  background-color: rgba(255, 255, 255, 0);
+  animation: blink-animation 1.5s steps(2, start) infinite;
+  position: relative;
+  top: 0;
+  right: 0em;
+  border-bottom: 1px solid #fff;
+  display: inline-block;
+  pointer-events: none;
+}
+
+@keyframes blink-animation {
+  from {
+    visibility: visible;
+  }
+  to {
+    visibility: hidden;
+  }
+}
