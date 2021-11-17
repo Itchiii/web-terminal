@@ -30,8 +30,7 @@ export class WebTerminal extends HTMLElement {
         }
         this.clickHandlerTerminalContent = this.clickedTerminalContent.bind(this);
 
-        //
-        this.#history = JSON.parse(localStorage.getItem(`${this.getAttribute('user')}`));
+        this.#history = JSON.parse(localStorage.getItem(`${this.getAttribute('user')}`)) ? JSON.parse(localStorage.getItem(`${this.getAttribute('user')}`)) : [];
         this.#commandCount = this.#history.length;
 
         this.addNavEvents();
