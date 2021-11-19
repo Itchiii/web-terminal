@@ -9,7 +9,7 @@ export class WebTerminal extends HTMLElement {
   #commandCount;
 
   /**
-   * Creates an instance of Terminal.
+   * Creates an instance of WebTerminal.
    */
   constructor() {
     super();
@@ -21,14 +21,6 @@ export class WebTerminal extends HTMLElement {
 
         //set specific terminal user
         this.shadowRoot.querySelector('.terminal-user').textContent = `[${this.getAttribute('user')}]:$`;
-
-        //object handler to remove click event listener
-        this.clickedTerminalContent = function () {
-          this.removeCursor();
-          this.#commandField.focus();
-          this.setCustomCursor();
-        }
-        this.clickHandlerTerminalContent = this.clickedTerminalContent.bind(this);
 
         this.#history = JSON.parse(localStorage.getItem(`${this.getAttribute('user')}`)) ? JSON.parse(localStorage.getItem(`${this.getAttribute('user')}`)) : [];
         this.#commandCount = this.#history.length;
@@ -60,61 +52,72 @@ export class WebTerminal extends HTMLElement {
    *
    */
   addEvents() {
-    ['keyup', 'mouseup'].forEach(evt =>
-      this.#commandField.addEventListener(evt, (e) => {
-        if (e.key === "ArrowUp") {
-          if (this.#commandCount > 0) {
-            this.#commandField.textContent = this.#history[this.#commandCount - 1];
-            this.#commandCount--;
-          }
-          if (this.#commandCount >= 0) {
-            //set cursor to beginning (strange workaround for chrome, chrome loses the normal cursor, focus() did not work
-            this.removeCursor();
-            this.setCursor(0,0)
-            this.setCustomCursor();
-          }
-        }
-        else if (e.key === "ArrowDown") {
-          if (this.#commandCount + 1 < this.#history.length) {
-            this.#commandField.textContent = this.#history[this.#commandCount + 1];
-            this.#commandCount++;
-          }
-          else {
-            this.#commandCount = this.#history.length;
-            this.#commandField.textContent = "";
-            //workaround for chrome, to set with empty content
-            this.#commandField.append(document.createTextNode(" "));
-          }
+    this.#commandField.addEventListener('blur', this);
+    this.#commandField.addEventListener('keyup', this);
+    this.#commandField.addEventListener('mouseup', this);
+    this.#commandField.addEventListener('keydown', this);
 
+    this.shadowRoot.getElementById('terminal-content').addEventListener('click', this.clickedTerminalContent);
+  }
+
+  handleEvent(e) {
+    if (e.type === 'blur' || e.type === 'keydown') {
+      //don't remove cursor on ArrowUp or Arrow Down to prevent the text content from moving for a short time
+      if (e?.key !== "ArrowUp" && e?.key !== "ArrowDown") {
+        this.removeCursor();
+      }
+    }
+
+    if (e.type === 'mouseup' || e.type === 'keyup') {
+      if (e.key === "ArrowUp") {
+        if (this.#commandCount > 0) {
+          this.#commandField.textContent = this.#history[this.#commandCount - 1];
+          this.#commandCount--;
+        }
+        if (this.#commandCount >= 0) {
           //set cursor to beginning (strange workaround for chrome, chrome loses the normal cursor, focus() did not work
           this.removeCursor();
           this.setCursor(0,0)
           this.setCustomCursor();
         }
-        else if (e?.key === "Enter") {
-          this.changeContent(this.#commandField.textContent);
+      }
+      else if (e.key === "ArrowDown") {
+        if (this.#commandCount + 1 < this.#history.length) {
+          this.#commandField.textContent = this.#history[this.#commandCount + 1];
+          this.#commandCount++;
         }
-
         else {
-          //set cursor to new position after typing
-          this.removeCursor();
-          this.setCustomCursor();
+          this.#commandCount = this.#history.length;
+          this.#commandField.textContent = "";
+          //workaround for chrome, to set with empty content
+          this.#commandField.append(document.createTextNode(" "));
         }
-      })
-    );
+  
+        //set cursor to beginning (strange workaround for chrome, chrome loses the normal cursor, focus() did not work
+        this.removeCursor();
+        this.setCursor(0,0)
+        this.setCustomCursor();
+      }
+      else if (e?.key === "Enter") {
+        this.changeContent(this.#commandField.textContent);
+      }
+  
+      else {
+        //set cursor to new position after typing
+        this.removeCursor();
+        this.setCustomCursor();
+      }
+    }
+  }
 
-    ['blur', 'keydown'].forEach(evt =>
-      this.#commandField.addEventListener(evt, (e) => {
-        //don't remove cursor on ArrowUp or Arrow Down to prevent the text content from moving for a short time
-        if (e?.key !== "ArrowUp" && e?.key !== "ArrowDown") {
-          this.removeCursor();
-        }
-      })
-    );
-
-    //remove listener to avoid duplicates after content changed and elements were duplicated
-    this.shadowRoot.getElementById('terminal-content').removeEventListener('click', this.clickHandlerTerminalContent);
-    this.shadowRoot.getElementById('terminal-content').addEventListener('click', this.clickHandlerTerminalContent);
+  /**
+   * event handler after terminal was clicked
+   *
+   */
+  clickedTerminalContent = () => {
+    this.removeCursor();
+    this.#commandField.focus();
+    this.setCustomCursor();
   }
 
   /**
