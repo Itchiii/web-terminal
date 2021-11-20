@@ -8,6 +8,9 @@
   <div class="terminal-content" id="terminal-content">
     <slot class="terminal-intro" name="terminal-intro"></slot>
     <span class="terminal-user"></span>
-    <span tabindex="-1" class="command-field" contenteditable="true" spellcheck="false">&nbsp;</span>
+    <div class="command-field--wrapper">
+      <span tabindex="-1" class="command-field" contenteditable="true" spellcheck="false"></span>
+      <div class="command-cursor"></div>
+    </div>
   </div>
 </div>

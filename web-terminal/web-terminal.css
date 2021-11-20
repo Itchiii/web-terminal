@@ -26,10 +26,10 @@ li {
 }
 
 .terminal-nav > li {
-  padding: 1em;
-  cursor: default;
-  position: relative;
   color: #bbb;
+  cursor: default;
+  padding: 1em;
+  position: relative;
 }
 
 .terminal-nav > li:hover {
@@ -41,11 +41,11 @@ li {
 }
 
 .nav-menu {
+  background-color: #fff;
+  box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.8);
+  color: #ccc;
   display: none;
   position: absolute;
-  background-color: #fff;
-  color: grey;
-  box-shadow: 0 0 5px 0 rgba(0, 0, 0, 0.8);
   top: 3em;
 }
 
@@ -63,31 +63,27 @@ li {
 }
 
 .terminal-content::-webkit-scrollbar-track {
-  border-radius: 5px;
   background-color: rgba(0, 13, 39, 0.5);
+  border-radius: 5px;
 }
 
 .terminal-content::-webkit-scrollbar {
-  width: 6px;
   background-color: rgba(0, 13, 39, 0);
+  width: 6px;
 }
 
 .terminal-content::-webkit-scrollbar-thumb {
+  background-color: rgba(150, 150, 150, 1);
   border-radius: 5px;
   box-shadow: inset 0 0 2px 0 rgba(0, 0, 0, 0.5);
-  background-color: rgba(150, 150, 150, 1);
 }
 
 .terminal-intro::slotted(*) {
   min-width: 100%;
 }
 
-.terminal-content *:not(span) {
+.terminal-content > *:not(div, span) {
   min-width: 100%;
-}
-
-.terminal-content span:not(.command-cursor) {
-  margin-top: 6px;
 }
 
 .terminal-content pre, .terminal-content p {
@@ -95,30 +91,46 @@ li {
 }
 
 .terminal-user {
-  font-weight: bold;
   color: #41c29f;
+  font-weight: bold;
+  margin-top: 6px;
 }
 
 .command-field {
-  caret-color: rgba(255, 255, 255, 0);
-  display: inline;
-  word-break: break-all;
-  text-transform: lowercase;
+  /* caret-color: rgba(255, 255, 255, 0); */
   color: #fff;
-  margin-left: 1em;
+  display: inline;
+  text-transform: lowercase;
+  word-break: break-all;
 }
 
-.command-cursor {
-  height: 0.5rem;
-  width: 0.5em;
-  background-color: rgba(255, 255, 255, 0);
-  animation: blink-animation 1.5s steps(2, start) infinite;
+.command-field--wrapper {
+  display: flex;
+  margin-left: 1em;
+  margin-top: 6px;
   position: relative;
+}
+
+.command-cursor{
+  animation: blink-animation 1.5s steps(2, start) infinite;
+  height: 100%;
+  left: 0;
+  position: absolute;
   top: 0;
-  right: 0em;
-  border-bottom: 1px solid #fff;
-  display: inline-block;
-  pointer-events: none;
+  width: 1ch;
+}
+
+@supports (backdrop-filter: none) or (-webkit-backdrop-filter: none) {
+  .command-cursor {
+    background-color: rgba(255,255,255,0.5);
+    backdrop-filter: invert(100%);
+  }
+}
+
+@supports not ((backdrop-filter: none) or (-webkit-backdrop-filter: none)) {
+  .command-cursor {
+    border-bottom: 2px solid #fff;
+  }
 }
 
 @keyframes blink-animation {

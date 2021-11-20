@@ -5,7 +5,10 @@ const response = fetch('./web-terminal/web-terminal.html').then(response => resp
 export class WebTerminal extends HTMLElement {
   #commandField;
   #terminalUser;
+
+  //save current history in array
   #history = [];
+  //help variable to go through the history
   #commandCount;
 
   /**
@@ -22,7 +25,8 @@ export class WebTerminal extends HTMLElement {
         //set specific terminal user
         this.shadowRoot.querySelector('.terminal-user').textContent = `[${this.getAttribute('user')}]:$`;
 
-        this.#history = JSON.parse(localStorage.getItem(`${this.getAttribute('user')}`)) ? JSON.parse(localStorage.getItem(`${this.getAttribute('user')}`)) : [];
+        //fill history with local storage
+        this.#history = localStorage.getItem(`${this.getAttribute('user')}`) ? JSON.parse(localStorage.getItem(`${this.getAttribute('user')}`)) : [];
         this.#commandCount = this.#history.length;
 
         this.addNavEvents();
@@ -55,56 +59,65 @@ export class WebTerminal extends HTMLElement {
     this.#commandField.addEventListener('blur', this);
     this.#commandField.addEventListener('keyup', this);
     this.#commandField.addEventListener('mouseup', this);
+    this.#commandField.addEventListener('mousedown', this);
     this.#commandField.addEventListener('keydown', this);
 
     this.shadowRoot.getElementById('terminal-content').addEventListener('click', this.clickedTerminalContent);
   }
 
   handleEvent(e) {
-    if (e.type === 'blur' || e.type === 'keydown') {
-      //don't remove cursor on ArrowUp or Arrow Down to prevent the text content from moving for a short time
-      if (e?.key !== "ArrowUp" && e?.key !== "ArrowDown") {
-        this.removeCursor();
-      }
+    //on blur
+    if (e.type === 'blur') {
+      this.stopCursorAnimation();
     }
 
-    if (e.type === 'mouseup' || e.type === 'keyup') {
+    //on keydown or mousedown
+    else if (e.type === 'keydown' || e.type === 'mousedown') {
+      //preventDefault() on enter to avoid line break unti keyup
+      //preventDefault() on ArrowUp and ArrowDown to that the cursor (from browser) is jumping to the beginning of the word
+      if (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "Enter") {
+        e.preventDefault();
+      }
+      this.stopCursorAnimation();
+      //If you hold down a key, the cursor should be updated
+      this.setCustomCursor();
+    }
+
+    //on keyup or mouseup
+    else if (e.type === 'keyup' || e.type === 'mouseup') {
+      this.startCursorAnimation();
+
+      //previous element on history
       if (e.key === "ArrowUp") {
         if (this.#commandCount > 0) {
-          this.#commandField.textContent = this.#history[this.#commandCount - 1];
-          this.#commandCount--;
+          this.#commandField.textContent = this.#history[--this.#commandCount];
         }
         if (this.#commandCount >= 0) {
-          //set cursor to beginning (strange workaround for chrome, chrome loses the normal cursor, focus() did not work
-          this.removeCursor();
-          this.setCursor(0,0)
+          this.setCursor(0, this.#commandField.textContent.length);
           this.setCustomCursor();
         }
       }
+
+      //next element on history
       else if (e.key === "ArrowDown") {
         if (this.#commandCount + 1 < this.#history.length) {
-          this.#commandField.textContent = this.#history[this.#commandCount + 1];
-          this.#commandCount++;
+          this.#commandField.textContent = this.#history[++this.#commandCount];
         }
         else {
+          //if next element does not exist, clear content
           this.#commandCount = this.#history.length;
           this.#commandField.textContent = "";
-          //workaround for chrome, to set with empty content
-          this.#commandField.append(document.createTextNode(" "));
         }
-  
-        //set cursor to beginning (strange workaround for chrome, chrome loses the normal cursor, focus() did not work
-        this.removeCursor();
-        this.setCursor(0,0)
+        this.setCursor(0, this.#commandField.textContent.length);
         this.setCustomCursor();
       }
-      else if (e?.key === "Enter") {
+
+      //on submit, add content depending on input
+      else if (e.key === "Enter") {
         this.changeContent(this.#commandField.textContent);
       }
-  
+
       else {
-        //set cursor to new position after typing
-        this.removeCursor();
         this.setCustomCursor();
       }
     }
@@ -114,10 +127,12 @@ export class WebTerminal extends HTMLElement {
    * event handler after terminal was clicked
    *
    */
-  clickedTerminalContent = () => {
-    this.removeCursor();
-    this.#commandField.focus();
+  clickedTerminalContent = (e) => {
+    if (e.target === this.#commandField) return;
+    //set cursor to the end of the input
+    this.setCursor(0, this.#commandField.textContent.length);
     this.setCustomCursor();
+    this.clickstartCursorAnimation();
   }
 
   /**
@@ -134,6 +149,22 @@ export class WebTerminal extends HTMLElement {
   }
 
   /**
+   * stop blink animation of cursor
+   *
+   */
+  stopCursorAnimation() {
+    this.shadowRoot.querySelector('.command-cursor').style.animationName = 'none';
+  }
+
+  /**
+   * start blink animation of cursor
+   *
+   */
+  startCursorAnimation() {
+    this.shadowRoot.querySelector('.command-cursor').style.animationName = 'blink-animation';
+  }
+
+  /**
    * set cursor to specific position
    * https://stackoverflow.com/a/6249440
    *
@@ -142,7 +173,12 @@ export class WebTerminal extends HTMLElement {
    */
   setCursor(line, number) {
     const range = document.createRange()
-    range.setStart(this.#commandField.childNodes[line], number);
+    if (this.#commandField.childNodes[line]) {
+      range.setStart(this.#commandField.childNodes[line], number);
+    }
+    else {
+      range.setStart(this.#commandField, number);
+    }
     range.collapse(true);
 
     const sel = window.getSelection()
@@ -151,42 +187,18 @@ export class WebTerminal extends HTMLElement {
   }
 
   /**
-   * set cursor 
+   * set custom cursor 
    *
    */
-  setCustomCursor(line = 0, number = 0) {
+  setCustomCursor() {
     //getSelection() does not work in Chrome with 'document' but with 'shadowRoot'; safari is unclear
     //https://stackoverflow.com/a/4565120
     var isChrome = /Chrome/.test(navigator.userAgent);
     let range = isChrome ? this.shadowRoot.getSelection().getRangeAt(0) : document.getSelection().getRangeAt(0);
 
-    //node itself or if the inner text is focused
     if (range.endContainer.classList?.contains("command-field") || range.endContainer.parentNode.classList.contains("command-field")) {
-      //create custom cursor element
-      const cursor = document.createElement('span');
-      cursor.classList.add('command-cursor');
-      cursor.setAttribute('id', "command-cursor");
-      cursor.setAttribute('contenteditable', "false");
-      range.insertNode(cursor);
-
-      //due to the new cursor, inside the element, the inner nodes of the element split and you have to specify concretely the text node and its char position. 
-      line = [...this.#commandField.childNodes].indexOf(cursor) - 1 > -1
-        ? [...this.#commandField.childNodes].indexOf(cursor) - 1
-        : line;
-      number = this.#commandField.childNodes[[...this.#commandField.childNodes].indexOf(cursor) - 1]?.length
-        ? this.#commandField.childNodes[[...this.#commandField.childNodes].indexOf(cursor) - 1]?.length
-        : number;
-
-      this.setCursor(line, number);
+      this.shadowRoot.querySelector('.command-cursor').style.transform = `translateX(${range.endOffset}ch)`
     }
-  }
-
-  /**
-   * if cursor is set, remove it
-   *
-   */
-  removeCursor() {
-    this.shadowRoot.getElementById('command-cursor')?.remove();
   }
 
   /**
@@ -208,19 +220,29 @@ export class WebTerminal extends HTMLElement {
     const newCommandField = this.#commandField.cloneNode(false);
     const oldCommandField = this.#commandField.cloneNode(false);
     //replaceChild() removes the old event listeners
-    this.shadowRoot.getElementById('terminal-content').replaceChild(oldCommandField, this.#commandField);
+    this.#commandField.parentNode.replaceChild(oldCommandField, this.#commandField);
     oldCommandField.textContent = input;
     oldCommandField.removeAttribute('contenteditable');
 
+    this.shadowRoot.querySelector('.command-cursor').remove();
+
     //set content with specific command
     this.setContent(input);
+
+    const commandFieldWrapper = document.createElement('div');
+    commandFieldWrapper.classList.add('command-field--wrapper');
+
+    const commandCursor = document.createElement('div');
+    commandCursor.classList.add('command-cursor');
 
     //workaround for chrome, to set with empty content
     newCommandField.append(document.createTextNode(" "));
 
     //append new nodes
     this.shadowRoot.getElementById('terminal-content').append(newUserField);
-    this.shadowRoot.getElementById('terminal-content').append(newCommandField);
+    commandFieldWrapper.append(newCommandField);
+    commandFieldWrapper.append(commandCursor);
+    this.shadowRoot.getElementById('terminal-content').append(commandFieldWrapper);
 
     this.init();
   }
