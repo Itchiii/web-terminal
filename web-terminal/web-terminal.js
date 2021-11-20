@@ -4,6 +4,7 @@ const response = fetch('./web-terminal/web-terminal.html').then(response => resp
 
 export class WebTerminal extends HTMLElement {
   #commandField;
+  #customCursor;
   #terminalUser;
 
   //save current history in array
@@ -44,6 +45,7 @@ export class WebTerminal extends HTMLElement {
     //last element of class
     this.#terminalUser = [...this.shadowRoot.querySelectorAll('.terminal-user')].pop();
     this.#commandField = [...this.shadowRoot.querySelectorAll('.command-field')].pop();
+    this.#customCursor = this.shadowRoot.querySelector('.command-cursor');
 
     this.addEvents();
     this.#commandField.focus();
@@ -93,7 +95,7 @@ export class WebTerminal extends HTMLElement {
           this.#commandField.textContent = this.#history[--this.#commandCount];
         }
         if (this.#commandCount >= 0) {
-          this.setCursor(0, this.#commandField.textContent.length);
+          this.setCaret(0, this.#commandField.textContent.length);
           this.setCustomCursor();
         }
       }
@@ -108,7 +110,7 @@ export class WebTerminal extends HTMLElement {
           this.#commandCount = this.#history.length;
           this.#commandField.textContent = "";
         }
-        this.setCursor(0, this.#commandField.textContent.length);
+        this.setCaret(0, this.#commandField.textContent.length);
         this.setCustomCursor();
       }
 
@@ -130,9 +132,9 @@ export class WebTerminal extends HTMLElement {
   clickedTerminalContent = (e) => {
     if (e.target === this.#commandField) return;
     //set cursor to the end of the input
-    this.setCursor(0, this.#commandField.textContent.length);
+    this.setCaret(0, this.#commandField.textContent.length);
     this.setCustomCursor();
-    this.clickstartCursorAnimation();
+    this.startCursorAnimation();
   }
 
   /**
@@ -153,7 +155,7 @@ export class WebTerminal extends HTMLElement {
    *
    */
   stopCursorAnimation() {
-    this.shadowRoot.querySelector('.command-cursor').style.animationName = 'none';
+    this.#customCursor.style.animationName = 'none';
   }
 
   /**
@@ -161,7 +163,7 @@ export class WebTerminal extends HTMLElement {
    *
    */
   startCursorAnimation() {
-    this.shadowRoot.querySelector('.command-cursor').style.animationName = 'blink-animation';
+    this.#customCursor.style.animationName = 'blink-animation';
   }
 
   /**
@@ -171,7 +173,7 @@ export class WebTerminal extends HTMLElement {
    * @param line
    * @param number
    */
-  setCursor(line, number) {
+  setCaret(line, number) {
     const range = document.createRange()
     if (this.#commandField.childNodes[line]) {
       range.setStart(this.#commandField.childNodes[line], number);
@@ -197,7 +199,7 @@ export class WebTerminal extends HTMLElement {
     let range = isChrome ? this.shadowRoot.getSelection().getRangeAt(0) : document.getSelection().getRangeAt(0);
 
     if (range.endContainer.classList?.contains("command-field") || range.endContainer.parentNode.classList.contains("command-field")) {
-      this.shadowRoot.querySelector('.command-cursor').style.transform = `translateX(${range.endOffset}ch)`
+      this.#customCursor.style.transform = `translateX(${range.endOffset}ch)`
     }
   }
 
@@ -216,27 +218,28 @@ export class WebTerminal extends HTMLElement {
       this.#commandCount = this.#history.length;
     }
 
+    //clone elements to append new one
     const newUserField = this.#terminalUser.cloneNode(true);
     const newCommandField = this.#commandField.cloneNode(false);
     const oldCommandField = this.#commandField.cloneNode(false);
+
+    //adjust old command field
     //replaceChild() removes the old event listeners
     this.#commandField.parentNode.replaceChild(oldCommandField, this.#commandField);
     oldCommandField.textContent = input;
     oldCommandField.removeAttribute('contenteditable');
 
-    this.shadowRoot.querySelector('.command-cursor').remove();
+    //remove old cursor
+    this.#customCursor.remove();
 
     //set content with specific command
     this.setContent(input);
 
+    //create new wrapper and cursor
     const commandFieldWrapper = document.createElement('div');
     commandFieldWrapper.classList.add('command-field--wrapper');
-
     const commandCursor = document.createElement('div');
     commandCursor.classList.add('command-cursor');
-
-    //workaround for chrome, to set with empty content
-    newCommandField.append(document.createTextNode(" "));
 
     //append new nodes
     this.shadowRoot.getElementById('terminal-content').append(newUserField);
